@@ -4,20 +4,26 @@ option go_package = "github.com/HienNguyen120201/UserService/api";
 service UserService{
     rpc Register(RegisterRequest) returns (RegisterReply);
     rpc Login(LoginRequest) returns (LoginReply);
+    rpc VerifyToken(VerifyTokenRequest) returns (VerifyTokenReply);
     rpc UpdateProfile(UpdateProfileRequest) returns (UpdateProfileReply);
 }
 
 message RegisterRequest{
-    User user = 1;
+    string username = 1;
+    string password = 2;
+    string confirm_password = 3; // haven't used
+    string name = 4;
 }
 message RegisterReply{
-    User user = 1;
+    string user_id = 1;
+    string token = 2;
 }
 message LoginRequest{
-    User user = 1;
+    string username = 1;
+    string password = 2;
 }
 message LoginReply{
-    User user = 1;
+    string user_id = 1;
     string token = 2;
 }
 message UpdateProfileRequest{
@@ -27,8 +33,16 @@ message UpdateProfileRequest{
 message UpdateProfileReply{
     
 }
-message User{
-    string username = 1;
-    string password = 2;
-    string name = 3;
+message VerifyTokenRequest{
+    string token = 1;
 }
+message VerifyTokenReply{
+    bool valid = 1;
+    string user_id = 2;
+}
+// message User{
+//     string username = 1;
+//     string password = 2;
+//     string name = 3;
+// }
+// protoc --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative api/user.proto 
