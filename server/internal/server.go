@@ -14,6 +14,8 @@ import (
 	"userservice/server/pkg/ent/user"
 
 	jwt "github.com/dgrijalva/jwt-go"
+	_ "github.com/go-sql-driver/mysql"
+	"github.com/joho/godotenv"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"golang.org/x/crypto/bcrypt"
@@ -97,7 +99,15 @@ func (s *server) UpdateProfile(ctx context.Context, in *pb.UpdateProfileRequest)
 }
 
 func connectDB() *ent.Client {
-	db, err := ent.Open("mysql", "root:28010608@tcp(mysqldb:3306)/user", ent.Debug())
+	godotenv.Load()
+	DB_HOST := os.Getenv("DB_HOST")
+	// DB_OUT_PORT := os.Getenv("DB_OUT_PORT")
+	DB_IN_PORT := os.Getenv("DB_IN_PORT")
+	DB_USER := os.Getenv("DB_USER")
+	DB_PASS := os.Getenv("DB_PASS")
+	DB_NAME := os.Getenv("DB_NAME")
+
+	db, err := ent.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?parseTime=True", DB_USER, DB_PASS, DB_HOST, DB_IN_PORT, DB_NAME), ent.Debug())
 	if err != nil {
 		log.Fatal("Fail to connect database: ", err)
 	}
