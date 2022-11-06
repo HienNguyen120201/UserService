@@ -23,8 +23,8 @@ import (
 )
 
 var (
-	port     = flag.Int("port", 50051, "The server port")
-	database *ent.Client
+	port            = flag.Int("port", 50051, "The server port")
+	database        *ent.Client
 )
 
 type server struct {
@@ -98,7 +98,7 @@ func (s *server) UpdateProfile(ctx context.Context, in *pb.UpdateProfileRequest)
 	return nil, nil
 }
 
-func connectDB() *ent.Client {
+func ConnectDB() {
 	godotenv.Load()
 	DB_HOST := os.Getenv("DB_HOST")
 	// DB_OUT_PORT := os.Getenv("DB_OUT_PORT")
@@ -115,7 +115,6 @@ func connectDB() *ent.Client {
 		log.Fatal("Fail to create schema resources: ", err)
 	}
 	database = db
-	return db
 }
 func RunGRPC() {
 	logger, err := NewLogger(zap.DebugLevel, true)
@@ -132,7 +131,7 @@ func RunGRPC() {
 
 	s := grpc.NewServer()
 	pb.RegisterUserServiceServer(s, &server{
-		db:     connectDB(),
+		db:     database,
 		logger: logger,
 	})
 	log.Println("grpc server listening at ", lis.Addr())
