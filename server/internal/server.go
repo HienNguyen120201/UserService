@@ -138,5 +138,5 @@ func RunGRPC() {
 	go func() {
 		log.Fatal("Fail to serve:", s.Serve(lis))
 	}()
-	defer database.Close()
+	// defer database.Close(): sql database is closed
 }

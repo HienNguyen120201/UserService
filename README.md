@@ -4,5 +4,5 @@ From UserService
 $ cd server && go run cmd/main.go
 ```
 
-#References
+# References
 https://github.com/kelseyhightower/grpc-hello-service/blob/master/auth-server/main.go
