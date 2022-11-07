@@ -8,23 +8,21 @@ import (
 	"net"
 	"os"
 	"strconv"
-	"time"
 	pb "userservice/server/api"
 	"userservice/server/pkg/ent"
 	"userservice/server/pkg/ent/user"
+	"userservice/server/util"
 
-	jwt "github.com/dgrijalva/jwt-go"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/joho/godotenv"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
-	"golang.org/x/crypto/bcrypt"
 	"google.golang.org/grpc"
 )
 
 var (
-	port            = flag.Int("port", 50051, "The server port")
-	database        *ent.Client
+	port     = flag.Int("port", 50051, "The server port")
+	database *ent.Client
 )
 
 type server struct {
@@ -42,25 +40,10 @@ func NewLogger(lv zapcore.Level, pretty bool) (*zap.Logger, error) {
 	level := zap.NewAtomicLevel()
 
 	if err := level.UnmarshalText([]byte(lv.String())); err != nil {
-		return nil, fmt.Errorf("Could not parse log level %s", lv.String())
+		return nil, fmt.Errorf("could not parse log level %s", lv.String())
 	}
 	c.Level = level
 	return c.Build(opts...)
-}
-
-func HashPwd(pwd string) (string, error) {
-	bytes, err := bcrypt.GenerateFromPassword([]byte(pwd), 10)
-	return string(bytes), err
-}
-
-func CreateToken(username string) (string, error) {
-	claims := jwt.MapClaims{
-		"authorized": true,
-		"username":   username,
-		"exp":        time.Now().Add(time.Hour * 12).Unix(),
-	}
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return token.SignedString([]byte(os.Getenv("SECRET_JWT")))
 }
 
 func (s *server) Register(ctx context.Context, in *pb.RegisterRequest) (*pb.RegisterReply, error) {
@@ -69,9 +52,9 @@ func (s *server) Register(ctx context.Context, in *pb.RegisterRequest) (*pb.Regi
 		s.logger.Sugar().Debug("Fail to get username:", err)
 	}
 	if already {
-		return nil, err //?
+		return nil, fmt.Errorf("username is unavailable")
 	} else {
-		pwd, err := HashPwd(in.Password)
+		pwd, err := util.HashPwd(in.Password)
 		if err != nil {
 			s.logger.Sugar().Debug("Fail to hash password:", err)
 		}
@@ -80,7 +63,7 @@ func (s *server) Register(ctx context.Context, in *pb.RegisterRequest) (*pb.Regi
 			s.logger.Sugar().Debug("Fail to register:", err)
 			return nil, err
 		}
-		token, err := CreateToken(res.Username)
+		token, err := util.CreateToken(res.Username)
 		if err != nil {
 			s.logger.Sugar().Debug("Fail to create token:", err)
 			return nil, err
@@ -92,7 +75,23 @@ func (s *server) Register(ctx context.Context, in *pb.RegisterRequest) (*pb.Regi
 	}
 }
 func (s *server) Login(ctx context.Context, in *pb.LoginRequest) (*pb.LoginReply, error) {
-	return nil, nil
+	user, err := s.db.User.Query().Where(user.Username(in.Username)).Only(ctx)
+	if err != nil {
+		return nil, err
+	}
+	err = util.CheckPwdHash(user.Password, in.Password)
+	if err != nil {
+		return nil, err
+	} else {
+		token, err := util.CreateToken(user.Username)
+		if err != nil {
+			return nil, err
+		}
+		return &pb.LoginReply{
+			UserId: strconv.Itoa(user.ID),
+			Token:  token,
+		}, nil
+	}
 }
 func (s *server) UpdateProfile(ctx context.Context, in *pb.UpdateProfileRequest) (*pb.UpdateProfileReply, error) {
 	return nil, nil
