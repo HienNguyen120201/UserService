@@ -8,7 +8,7 @@ import (
 )
 
 var (
-	debugListenAddr = flag.String("debug-listen-addr", "127.0.0.1:7801", "HTTP listen address.")
+	debugListenAddr = flag.String("debug-listen-addr", "0.0.0.0:8080", "HTTP listen address.")
 )
 
 func main() {

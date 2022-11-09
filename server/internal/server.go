@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log"
 	"net"
-	"os"
 	"strconv"
 	pb "userservice/server/api"
 	"userservice/server/pkg/ent"
@@ -106,12 +105,17 @@ func (s *server) UpdateProfile(ctx context.Context, in *pb.UpdateProfileRequest)
 
 func ConnectDB() {
 	godotenv.Load()
-	DB_HOST := os.Getenv("DB_HOST")
-	// DB_OUT_PORT := os.Getenv("DB_OUT_PORT")
-	DB_IN_PORT := os.Getenv("DB_IN_PORT")
-	DB_USER := os.Getenv("DB_USER")
-	DB_PASS := os.Getenv("DB_PASS")
-	DB_NAME := os.Getenv("DB_NAME")
+	// DB_HOST := os.Getenv("DB_HOST")
+	// DB_IN_PORT := os.Getenv("DB_IN_PORT")
+	// DB_USER := os.Getenv("DB_USER")
+	// DB_PASS := os.Getenv("DB_PASS")
+	// DB_NAME := os.Getenv("DB_NAME")
+
+	DB_HOST := "sql12.freemysqlhosting.net"
+	DB_IN_PORT := "3306"
+	DB_USER := "sql12538672"
+	DB_PASS := "6GcdwsRYCN"
+	DB_NAME := "sql12538672"
 
 	db, err := ent.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?parseTime=True", DB_USER, DB_PASS, DB_HOST, DB_IN_PORT, DB_NAME), ent.Debug())
 	if err != nil {

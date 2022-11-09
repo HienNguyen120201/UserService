@@ -1,4 +1,4 @@
-module userservice
+module userservice/server
 
 go 1.19
 
