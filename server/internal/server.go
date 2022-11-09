@@ -16,8 +16,8 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/joho/godotenv"
 	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/metadata"
 )
 
 var (
@@ -29,21 +29,6 @@ type server struct {
 	pb.UnimplementedUserServiceServer
 	db     *ent.Client
 	logger *zap.Logger
-}
-
-func NewLogger(lv zapcore.Level, pretty bool) (*zap.Logger, error) {
-	c := zap.NewDevelopmentConfig()
-	var opts []zap.Option
-	if pretty {
-		opts = append(opts, zap.AddStacktrace(zap.ErrorLevel))
-	}
-	level := zap.NewAtomicLevel()
-
-	if err := level.UnmarshalText([]byte(lv.String())); err != nil {
-		return nil, fmt.Errorf("could not parse log level %s", lv.String())
-	}
-	c.Level = level
-	return c.Build(opts...)
 }
 
 func (s *server) Register(ctx context.Context, in *pb.RegisterRequest) (*pb.RegisterReply, error) {
@@ -94,7 +79,29 @@ func (s *server) Login(ctx context.Context, in *pb.LoginRequest) (*pb.LoginReply
 	}
 }
 func (s *server) UpdateProfile(ctx context.Context, in *pb.UpdateProfileRequest) (*pb.UpdateProfileReply, error) {
-	return nil, nil
+	data, ok := metadata.FromIncomingContext(ctx)
+	if !ok || len(data.Get("token")) == 0 {
+		s.logger.Sugar().Debug("Cannot get meta")
+		return nil, fmt.Errorf("cannot get meta")
+	}
+	_, err := util.IsValidToken(data.Get("token")[0])
+	if err != nil {
+		s.logger.Sugar().Debug("Token is not valid", err)
+		return nil, err
+	}
+	already, err := s.db.User.Query().Where(user.Username(in.OldName)).Only(ctx)
+	if err != nil {
+		s.logger.Sugar().Debug("Fail to query username", err)
+		return nil, err
+	}
+	_, err = already.Update().SetName(in.NewName).Save(ctx)
+	if err != nil {
+		s.logger.Debug("Fail to update new username")
+		return nil, err
+	}
+	return &pb.UpdateProfileReply{
+		Name: already.Name,
+	}, nil
 }
 
 func ConnectDB() {
@@ -116,7 +123,7 @@ func ConnectDB() {
 	database = db
 }
 func RunGRPC() {
-	logger, err := NewLogger(zap.DebugLevel, true)
+	logger, err := util.NewLogger(zap.DebugLevel, true)
 	if err != nil {
 		logger.Sugar().Debug("Fail to initialize log:", err)
 	}

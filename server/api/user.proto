@@ -31,7 +31,7 @@ message UpdateProfileRequest{
     string old_name = 2;
 }
 message UpdateProfileReply{
-    
+    string name = 1;
 }
 message VerifyTokenRequest{
     string token = 1;
